@@ -61,13 +61,25 @@
     </div>
 
     <!-- SIDEBAR -->
-    <div class="sidebar" id="sidebar" style="display: none">
-      <div class="sidebar-logo">
+    <div
+      class="sidebar-overlay"
+      id="sideOverlay"
+      onclick="closeSidebar()"
+    ></div>
+    <div class="sidebar closed" id="sidebar" style="display: none">
+      <div class="sidebar-logo" style="position: relative">
         <div class="logo-icon">🏪</div>
         <div>
           <div class="logo-text" id="bizName">نظام الإدارة</div>
           <div class="logo-sub">ERP / POS</div>
         </div>
+        <button
+          class="menu-close-btn"
+          onclick="closeSidebar()"
+          title="إغلاق القائمة"
+        >
+          ✕
+        </button>
       </div>
       <nav class="sidebar-nav" id="sideNav"></nav>
       <div class="sidebar-footer">
@@ -79,10 +91,9 @@
           </div>
         </div>
         <div class="sidebar-actions">
-          <button class="sa-btn" onclick="toggleTheme()" id="themeBtn">
-            🌙 فاتح
+          <button class="sa-btn logout-btn" onclick="logout()" title="خروج">
+            🚪 <span class="sa-label">خروج</span>
           </button>
-          <button class="sa-btn" onclick="logout()">🚪 خروج</button>
         </div>
       </div>
     </div>
@@ -90,9 +101,23 @@
     <!-- MAIN -->
     <div class="main" id="mainArea" style="display: none">
       <div class="topbar">
-        <div class="page-title" id="pageTitle">لوحة التحكم</div>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()">
+            <span></span><span></span><span></span>
+          </button>
+          <div class="page-title" id="pageTitle">لوحة التحكم</div>
+        </div>
         <div class="topbar-right">
           <div style="font-size: 13px; color: var(--text3)" id="clock"></div>
+          <button
+            class="topbar-btn"
+            id="themeTopBtn"
+            onclick="toggleTheme()"
+            title="تغيير المظهر"
+            style="font-size: 18px; padding: 6px 10px; line-height: 1"
+          >
+            🌙
+          </button>
           <button
             class="topbar-btn primary"
             id="topbarActionBtn"
@@ -290,6 +315,7 @@
                     <th>الكود</th>
                     <th>اسم الصنف</th>
                     <th>التصنيف</th>
+                    <th>نوع المنتج</th>
                     <th>سعر الشراء</th>
                     <th>سعر البيع</th>
                     <th>المخزون</th>
@@ -491,6 +517,12 @@
             <button class="btn btn-ghost btn-sm" onclick="printAllInvoices()">
               🖨️ طباعة كل الفواتير
             </button>
+            <button
+              class="btn btn-ghost btn-sm"
+              onclick="openPrintRangeModal()"
+            >
+              🖨️ طباعة بنطاق محدد
+            </button>
             <span
               style="font-size: 12px; color: var(--text3)"
               id="selectedCount"
@@ -615,6 +647,123 @@
             </button>
           </div>
           <div class="users-grid" id="usersGrid"></div>
+        </div>
+
+        <!-- HR / EMPLOYEES -->
+        <div class="page" id="page-hr">
+          <div class="toolbar">
+            <button class="btn btn-primary" onclick="openEmpModal()">
+              + موظف جديد
+            </button>
+            <select
+              class="form-control"
+              style="width: auto"
+              id="hrMonthFilter"
+              onchange="renderHR()"
+            >
+              <option value="">الشهر الحالي</option>
+              <option value="1">يناير</option>
+              <option value="2">فبراير</option>
+              <option value="3">مارس</option>
+              <option value="4">ابريل</option>
+              <option value="5">مايو</option>
+              <option value="6">يونيو</option>
+              <option value="7">يوليو</option>
+              <option value="8">اغسطس</option>
+              <option value="9">سبتمبر</option>
+              <option value="10">اكتوبر</option>
+              <option value="11">نوفمبر</option>
+              <option value="12">ديسمبر</option>
+            </select>
+            <button class="btn btn-ghost" onclick="printPayroll()">
+              🖨 كشف الرواتب
+            </button>
+          </div>
+          <div
+            class="metric-grid"
+            style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px"
+          >
+            <div class="metric-card">
+              <div class="metric-icon">👷</div>
+              <div class="metric-label">عدد الموظفين</div>
+              <div class="metric-value" id="hr-count">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon">💰</div>
+              <div class="metric-label">اجمالي الرواتب</div>
+              <div class="metric-value" id="hr-total">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon">📉</div>
+              <div class="metric-label">اجمالي الخصومات</div>
+              <div class="metric-value metric-down" id="hr-deductions">0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon">✅</div>
+              <div class="metric-label">صافي المدفوع</div>
+              <div class="metric-value metric-up" id="hr-net">0</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">👷 سجل الموظفين والرواتب</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الموظف</th>
+                    <th>الوظيفة</th>
+                    <th>الراتب الاساسي</th>
+                    <th>ايام الغياب</th>
+                    <th>البدلات</th>
+                    <th>الخصومات</th>
+                    <th>صافي الراتب</th>
+                    <th>الحالة</th>
+                    <th>اجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="hrTbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card" style="margin-top: 16px">
+            <div class="card-title">📅 سجل الحضور والغياب</div>
+            <div class="toolbar" style="margin-bottom: 14px">
+              <select
+                class="form-control"
+                style="width: auto"
+                id="attEmpFilter"
+              >
+                <option value="">كل الموظفين</option>
+              </select>
+              <input
+                type="date"
+                class="form-control"
+                style="width: auto"
+                id="attDateFilter"
+              />
+              <button
+                class="btn btn-primary btn-sm"
+                onclick="recordAttendance()"
+              >
+                + تسجيل غياب
+              </button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الموظف</th>
+                    <th>التاريخ</th>
+                    <th>اليوم</th>
+                    <th>النوع</th>
+                    <th>السبب</th>
+                    <th>حذف</th>
+                  </tr>
+                </thead>
+                <tbody id="attTbody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <!-- SETTINGS -->
@@ -748,6 +897,38 @@
             ><select class="form-control" id="pCat"></select>
           </div>
           <div class="form-group">
+            <label class="form-label"
+              >نوع المنتج
+              <span style="font-size: 11px; color: var(--text3)"
+                >(مثال: ألماني، صيني، محلي)</span
+              ></label
+            >
+            <input
+              class="form-control"
+              id="pType"
+              placeholder="اكتب نوع المنتج بحرية..."
+              list="ptypeList"
+            />
+            <datalist id="ptypeList">
+              <option value="ألماني" />
+              <option value="صيني" />
+              <option value="إيطالي" />
+              <option value="تركي" />
+              <option value="محلي" />
+              <option value="أمريكي" />
+              <option value="ياباني" />
+              <option value="كوري" />
+              <option value="فرنسي" />
+              <option value="بضاعة" />
+              <option value="خدمة" />
+              <option value="مواد خام" />
+              <option value="قطع غيار" />
+              <option value="مواد استهلاكية" />
+            </datalist>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
             <label class="form-label">الوحدة</label
             ><select class="form-control" id="pUnit">
               <option>قطعة</option>
@@ -756,7 +937,19 @@
               <option>كرتونة</option>
               <option>علبة</option>
               <option>كيس</option>
+              <option>متر</option>
+              <option>طن</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">الحد الأدنى للتنبيه</label
+            ><input
+              class="form-control"
+              id="pMinQty"
+              type="number"
+              placeholder="5"
+              value="5"
+            />
           </div>
         </div>
         <div class="form-grid-3">
@@ -789,13 +982,11 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">الحد الأدنى للتنبيه</label
+          <label class="form-label">ملاحظات</label
           ><input
             class="form-control"
-            id="pMinQty"
-            type="number"
-            placeholder="5"
-            value="5"
+            id="pNotes"
+            placeholder="ملاحظات إضافية (اختياري)"
           />
         </div>
         <div class="modal-footer">
@@ -1125,6 +1316,327 @@
           ><button class="btn btn-primary" onclick="saveUser()">
             حفظ المستخدم
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPLOYEE MODAL -->
+    <div class="modal-overlay" id="empModal">
+      <div class="modal" style="max-width: 580px">
+        <div class="modal-header">
+          <div class="modal-title" id="empModalTitle">موظف جديد</div>
+          <button class="modal-close" onclick="closeModal('empModal')">
+            X
+          </button>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">الاسم الكامل *</label
+            ><input
+              class="form-control"
+              id="empName"
+              placeholder="اسم الموظف"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">الوظيفة / المسمى الوظيفي</label
+            ><input
+              class="form-control"
+              id="empJob"
+              placeholder="مثال: محاسب، كاشير"
+            />
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">رقم الهاتف</label
+            ><input
+              class="form-control"
+              id="empPhone"
+              placeholder="01xxxxxxxxx"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">تاريخ التعيين</label
+            ><input class="form-control" type="date" id="empJoinDate" />
+          </div>
+        </div>
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label class="form-label">الراتب الاساسي (ج)</label
+            ><input
+              class="form-control"
+              type="number"
+              id="empBasic"
+              placeholder="0"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">بدل النقل (ج)</label
+            ><input
+              class="form-control"
+              type="number"
+              id="empTransport"
+              placeholder="0"
+              value="0"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">بدلات اخرى (ج)</label
+            ><input
+              class="form-control"
+              type="number"
+              id="empOther"
+              placeholder="0"
+              value="0"
+            />
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">خصم التاخير / اليوم (ج)</label
+            ><input
+              class="form-control"
+              type="number"
+              id="empDailyDeduct"
+              placeholder="0"
+              value="0"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">نوع العقد</label>
+            <select class="form-control" id="empContractType">
+              <option value="full">دوام كامل</option>
+              <option value="part">دوام جزئي</option>
+              <option value="daily">يومية</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeModal('empModal')">
+            الغاء</button
+          ><button class="btn btn-primary" onclick="saveEmployee()">
+            حفظ الموظف
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEDUCTION MODAL -->
+    <div class="modal-overlay" id="deductModal">
+      <div class="modal" style="max-width: 460px">
+        <div class="modal-header">
+          <div class="modal-title">اضافة خصم / بدل للموظف</div>
+          <button class="modal-close" onclick="closeModal('deductModal')">
+            X
+          </button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">الموظف</label
+          ><select class="form-control" id="deductEmpId"></select>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">النوع</label>
+            <select class="form-control" id="deductType">
+              <option value="deduction">خصم</option>
+              <option value="bonus">مكافاة / بدل</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">المبلغ (ج)</label
+            ><input
+              class="form-control"
+              type="number"
+              id="deductAmount"
+              placeholder="0"
+            />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">السبب</label
+          ><input
+            class="form-control"
+            id="deductReason"
+            placeholder="سبب الخصم او البدل"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">الشهر</label
+          ><input class="form-control" type="month" id="deductMonth" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeModal('deductModal')">
+            الغاء</button
+          ><button class="btn btn-primary" onclick="saveDeduction()">
+            حفظ
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BULK PRINT RANGE MODAL -->
+    <div class="modal-overlay" id="printRangeModal">
+      <div class="modal" style="max-width: 480px">
+        <div class="modal-header">
+          <div class="modal-title">🖨 طباعة فواتير بنطاق محدد</div>
+          <button class="modal-close" onclick="closeModal('printRangeModal')">
+            X
+          </button>
+        </div>
+        <div style="margin-bottom: 18px">
+          <div
+            style="
+              font-size: 13px;
+              color: var(--text2);
+              margin-bottom: 14px;
+              padding: 10px;
+              background: var(--bg3);
+              border-radius: var(--radius-sm);
+            "
+          >
+            اختر طريقة تحديد الفواتير:
+          </div>
+          <div
+            style="display: flex; gap: 8px; margin-bottom: 16px"
+            id="rangeTypeBtns"
+          >
+            <button
+              class="btn btn-ghost btn-sm active-range"
+              id="rangeByNum"
+              onclick="setRangeType('num')"
+            >
+              بالرقم
+            </button>
+            <button
+              class="btn btn-ghost btn-sm"
+              id="rangeByDate"
+              onclick="setRangeType('date')"
+            >
+              بالتاريخ
+            </button>
+            <button
+              class="btn btn-ghost btn-sm"
+              id="rangeByManual"
+              onclick="setRangeType('manual')"
+            >
+              يدوي
+            </button>
+          </div>
+          <div id="rangeByNumSection">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">من رقم الفاتورة</label
+                ><input
+                  class="form-control"
+                  id="rangeFrom"
+                  placeholder="1"
+                  type="number"
+                  min="1"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">الى رقم الفاتورة</label
+                ><input
+                  class="form-control"
+                  id="rangeTo"
+                  placeholder="10"
+                  type="number"
+                  min="1"
+                />
+              </div>
+            </div>
+          </div>
+          <div id="rangeByDateSection" style="display: none">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">من تاريخ</label
+                ><input class="form-control" type="date" id="rangeDateFrom" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">الى تاريخ</label
+                ><input class="form-control" type="date" id="rangeDateTo" />
+              </div>
+            </div>
+          </div>
+          <div id="rangeByManualSection" style="display: none">
+            <div class="form-group">
+              <label class="form-label">ادخل ارقام الفواتير مفصولة بفاصلة</label
+              ><input
+                class="form-control"
+                id="rangeManual"
+                placeholder="مثال: 1,2,5,8,12"
+              />
+            </div>
+          </div>
+          <div
+            style="
+              padding: 10px 14px;
+              background: rgba(108, 99, 255, 0.1);
+              border-radius: var(--radius-sm);
+              font-size: 13px;
+              color: var(--accent);
+            "
+            id="rangePreview"
+          >
+            سيتم طباعة 0 فاتورة
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeModal('printRangeModal')">
+            الغاء
+          </button>
+          <button class="btn btn-ghost" onclick="previewRangeInvoices()">
+            👁 معاينة
+          </button>
+          <button class="btn btn-primary" onclick="printRangeInvoices()">
+            🖨 طباعة الان
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYSLIP PRINT MODAL -->
+    <div class="modal-overlay" id="payslipModal">
+      <div class="modal" style="max-width: 500px; padding: 0; overflow: hidden">
+        <div
+          style="
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <span style="font-size: 15px; font-weight: 700; color: var(--text)"
+            >كشف الرواتب</span
+          >
+          <div style="display: flex; gap: 8px">
+            <button class="btn btn-primary btn-sm" onclick="doPrintPayroll()">
+              🖨 طباعة</button
+            ><button class="modal-close" onclick="closeModal('payslipModal')">
+              X
+            </button>
+          </div>
+        </div>
+        <div
+          style="
+            background: #f5f5f5;
+            padding: 16px;
+            max-height: 75vh;
+            overflow-y: auto;
+          "
+        >
+          <div
+            id="payslipArea"
+            style="
+              background: white;
+              border-radius: 8px;
+              padding: 24px;
+              font-family: Cairo, sans-serif;
+              direction: rtl;
+            "
+          ></div>
         </div>
       </div>
     </div>

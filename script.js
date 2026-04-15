@@ -351,8 +351,113 @@ const DB = {
   nextSuppId: 3,
   nextPurchId: 3,
   nextUserId: 4,
+  nextEmpId: 4,
+  employees: [
+    {
+      id: 1,
+      name: "محمد أحمد",
+      job: "مدير المتجر",
+      phone: "01012345678",
+      joinDate: "2023-01-01",
+      basic: 5000,
+      transport: 500,
+      other: 200,
+      dailyDeduct: 150,
+      contractType: "full",
+      active: true,
+    },
+    {
+      id: 2,
+      name: "سارة علي",
+      job: "كاشير",
+      phone: "01198765432",
+      joinDate: "2023-06-01",
+      basic: 3000,
+      transport: 300,
+      other: 0,
+      dailyDeduct: 100,
+      contractType: "full",
+      active: true,
+    },
+    {
+      id: 3,
+      name: "أحمد حسن",
+      job: "مخزنجي",
+      phone: "01234567890",
+      joinDate: "2024-01-15",
+      basic: 2500,
+      transport: 250,
+      other: 0,
+      dailyDeduct: 80,
+      contractType: "full",
+      active: true,
+    },
+  ],
+  attendance: [
+    {
+      id: 1,
+      empId: 1,
+      date: "2025-04-02",
+      type: "absent",
+      reason: "إجازة مرضية",
+    },
+    {
+      id: 2,
+      empId: 2,
+      date: "2025-04-05",
+      type: "late",
+      reason: "تأخير ساعة",
+    },
+    {
+      id: 3,
+      empId: 3,
+      date: "2025-04-08",
+      type: "absent",
+      reason: "ظروف شخصية",
+    },
+  ],
+  adjustments: [
+    {
+      id: 1,
+      empId: 1,
+      type: "bonus",
+      amount: 500,
+      reason: "مكافأة أداء",
+      month: "2025-04",
+    },
+    {
+      id: 2,
+      empId: 2,
+      type: "deduction",
+      amount: 200,
+      reason: "خصم تأخير متكرر",
+      month: "2025-04",
+    },
+  ],
+  nextAttId: 4,
+  nextAdjId: 3,
 };
+// ═══════════════════════════════════════════
+// 💾 نظام الحفظ والاسترجاع التلقائي (Auto-Save)
+// ═══════════════════════════════════════════
+function loadDB() {
+  const savedData = localStorage.getItem("erp_super_data");
+  if (savedData) {
+    // استبدال البيانات الافتراضية بالبيانات المحفوظة
+    Object.assign(DB, JSON.parse(savedData));
+  }
+}
 
+function saveDB() {
+  localStorage.setItem("erp_super_data", JSON.stringify(DB));
+}
+
+// 1. استرجاع البيانات فوراً أول ما الصفحة تفتح
+loadDB();
+
+// 2. حفظ تلقائي للبيانات كل ثانيتين (عشان متعدلش في كل دوال الكود)
+setInterval(saveDB, 2000);
+// ═══════════════════════════════════════════
 let cart = {},
   posActiveCat = "all",
   activePayment = "cash",
@@ -420,8 +525,13 @@ function doLogin() {
   currentUser = user;
   currentUserRole = user.role;
   document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("sidebar").style.display = "flex";
+  const sbEl = document.getElementById("sidebar");
+  sbEl.style.display = "flex";
   document.getElementById("mainArea").style.display = "flex";
+  // open sidebar on desktop, keep closed on mobile
+  if (window.innerWidth >= 768) {
+    openSidebar();
+  }
   document.getElementById("sideAvatar").textContent = user.name.charAt(0);
   document.getElementById("sideUserName").textContent = user.name;
   document.getElementById("sideUserRole").textContent =
@@ -434,12 +544,51 @@ function logout() {
   document.getElementById("sidebar").style.display = "none";
   document.getElementById("mainArea").style.display = "none";
 }
+
+function toggleSidebar() {
+  const sb = document.getElementById("sidebar");
+  const ov = document.getElementById("sideOverlay");
+  const hb = document.getElementById("hamburgerBtn");
+  if (sb.classList.contains("closed")) {
+    sb.classList.remove("closed");
+    ov.classList.add("open");
+    hb.classList.add("open");
+  } else {
+    closeSidebar();
+  }
+}
+function closeSidebar() {
+  const sb = document.getElementById("sidebar");
+  const ov = document.getElementById("sideOverlay");
+  const hb = document.getElementById("hamburgerBtn");
+  sb.classList.add("closed");
+  ov.classList.remove("open");
+  if (hb) hb.classList.remove("open");
+}
+function openSidebar() {
+  const sb = document.getElementById("sidebar");
+  const ov = document.getElementById("sideOverlay");
+  const hb = document.getElementById("hamburgerBtn");
+  sb.classList.remove("closed");
+  ov.classList.add("open");
+  if (hb) hb.classList.add("open");
+}
+
 function toggleTheme() {
   isDark = !isDark;
   document.body.classList.toggle("light", !isDark);
-  document.getElementById("themeBtn").textContent = isDark
-    ? "🌙 فاتح"
-    : "☀️ داكن";
+  const btn = document.getElementById("themeTopBtn");
+  if (btn) btn.textContent = isDark ? "🌙" : "☀️";
+  localStorage.setItem("erpTheme", isDark ? "dark" : "light");
+}
+function initTheme() {
+  const saved = localStorage.getItem("erpTheme");
+  if (saved === "light") {
+    isDark = false;
+    document.body.classList.add("light");
+    const btn = document.getElementById("themeTopBtn");
+    if (btn) btn.textContent = "☀️";
+  }
 }
 
 function buildNav() {
@@ -497,6 +646,12 @@ function buildNav() {
     },
     { sec: "التحليل والإعدادات", roles: ["admin"] },
     { id: "reports", icon: "📈", label: "التقارير", roles: ["admin"] },
+    {
+      id: "hr",
+      icon: "👷",
+      label: "الموظفين والرواتب",
+      roles: ["admin"],
+    },
     { id: "users", icon: "👤", label: "المستخدمين", roles: ["admin"] },
     { id: "settings", icon: "⚙️", label: "الإعدادات", roles: ["admin"] },
   ];
@@ -506,7 +661,7 @@ function buildNav() {
       if (!item.roles || item.roles.includes(currentUserRole))
         html += `<div class="nav-section">${item.sec}</div>`;
     } else if (!item.roles || item.roles.includes(currentUserRole)) {
-      html += `<div class="nav-item" id="nav-${item.id}" onclick="navigate('${item.id}',this)"><span class="nav-icon">${item.icon}</span><span>${item.label}</span></div>`;
+      html += `<div class="nav-item" id="nav-${item.id}" onclick="navigate('${item.id}',this);if(window.innerWidth<768)closeSidebar();"><span class="nav-icon">${item.icon}</span><span>${item.label}</span></div>`;
     }
   });
   document.getElementById("sideNav").innerHTML = html;
@@ -564,6 +719,7 @@ function navigate(page, el) {
     suppliers: renderSuppliers,
     purchases: renderPurchases,
     users: renderUsers,
+    hr: renderHR,
   };
   if (renders[page]) renders[page]();
 }
@@ -954,7 +1110,7 @@ function renderProducts() {
     list
       .map((p) => {
         const isLow = p.qty <= p.minQty;
-        return `<tr><td><code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--text2)">${p.code}</code></td><td style="color:var(--text);font-weight:500">${p.name}</td><td><span style="background:${catColors[p.cat] || "#888"}22;color:${catColors[p.cat] || "#888"};padding:2px 8px;border-radius:20px;font-size:12px">${p.cat}</span></td><td>${p.buyPrice} ${DB.settings.currency}</td><td style="color:var(--accent);font-weight:600">${p.sellPrice} ${DB.settings.currency}</td><td style="color:${isLow ? "var(--accent3)" : "var(--text)"};font-weight:${isLow ? 700 : 400}">${p.qty} ${p.unit}</td><td><span class="badge ${isLow ? "badge-danger" : "badge-success"}">${isLow ? "منخفض" : "متوفر"}</span></td><td>${canModify ? `<button class="btn btn-ghost btn-sm btn-icon" onclick="editProduct(${p.id})" style="margin-left:4px">✏️</button><button class="btn btn-ghost btn-sm btn-icon" onclick="deleteProduct(${p.id})">🗑️</button>` : "—"}</td></tr>`;
+        return `<tr><td><code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--text2)">${p.code}</code></td><td style="color:var(--text);font-weight:500">${p.name}${p.notes ? '<br><span style="font-size:10px;color:var(--text3)">' + p.notes + "</span>" : ""}</td><td><span style="background:${catColors[p.cat] || "#888"}22;color:${catColors[p.cat] || "#888"};padding:2px 8px;border-radius:20px;font-size:12px">${p.cat}</span></td><td><span class="prod-type-badge">${p.ptype || "بضاعة"}</span></td><td>${p.buyPrice} ${DB.settings.currency}</td><td style="color:var(--accent);font-weight:600">${p.sellPrice} ${DB.settings.currency}</td><td style="color:${isLow ? "var(--accent3)" : "var(--text)"};font-weight:${isLow ? 700 : 400}">${p.qty} ${p.unit}</td><td><span class="badge ${isLow ? "badge-danger" : "badge-success"}">${isLow ? "منخفض" : "متوفر"}</span></td><td>${canModify ? `<button class="btn btn-ghost btn-sm btn-icon" onclick="editProduct(${p.id})" style="margin-left:4px">✏️</button><button class="btn btn-ghost btn-sm btn-icon" onclick="deleteProduct(${p.id})">🗑️</button>` : "—"}</td></tr>`;
       })
       .join() ||
     `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:30px">لا توجد أصناف</td></tr>`;
@@ -978,11 +1134,19 @@ function openProductModal(id) {
       document.getElementById("pSellPrice").value = p.sellPrice;
       document.getElementById("pQty").value = p.qty;
       document.getElementById("pMinQty").value = p.minQty;
+      document.getElementById("pType").value = p.ptype || "بضاعة";
+      document.getElementById("pNotes").value = p.notes || "";
     }
   } else {
-    ["pName", "pCode", "pBuyPrice", "pSellPrice", "pQty"].forEach(
-      (fid) => (document.getElementById(fid).value = ""),
-    );
+    [
+      "pName",
+      "pCode",
+      "pBuyPrice",
+      "pSellPrice",
+      "pQty",
+      "pNotes",
+      "pType",
+    ].forEach((fid) => (document.getElementById(fid).value = ""));
     document.getElementById("pMinQty").value = 5;
   }
   openModal("productModal");
@@ -998,11 +1162,13 @@ function saveProduct() {
     name,
     code: document.getElementById("pCode").value || "P" + DB.nextProdId,
     cat: document.getElementById("pCat").value,
+    ptype: document.getElementById("pType").value,
     unit: document.getElementById("pUnit").value,
     buyPrice: parseFloat(document.getElementById("pBuyPrice").value) || 0,
     sellPrice,
     qty: parseInt(document.getElementById("pQty").value) || 0,
     minQty: parseInt(document.getElementById("pMinQty").value) || 5,
+    notes: document.getElementById("pNotes").value,
   };
   if (editingProductId) {
     const idx = DB.products.findIndex((p) => p.id === editingProductId);
@@ -1477,6 +1643,466 @@ function importBackup(input) {
   r.readAsText(f);
 }
 
+// ═══════════════════════════════════════════
+// HR — EMPLOYEES, ATTENDANCE, PAYROLL
+// ═══════════════════════════════════════════
+let editingEmpId = null,
+  currentRangeType = "num";
+
+function renderHR() {
+  const cur = DB.settings.currency;
+  const month = document.getElementById("hrMonthFilter").value;
+  const curMonth = new Date().getMonth() + 1;
+  const targetMonth = month ? parseInt(month) : curMonth;
+  const targetMonthStr =
+    new Date().getFullYear() + "-" + String(targetMonth).padStart(2, "0");
+
+  // Populate attendance emp filter
+  const attSel = document.getElementById("attEmpFilter");
+  attSel.innerHTML =
+    '<option value="">كل الموظفين</option>' +
+    DB.employees
+      .map((e) => `<option value="${e.id}">${e.name}</option>`)
+      .join("");
+  if (!document.getElementById("attDateFilter").value)
+    document.getElementById("attDateFilter").value = TODAY;
+
+  let totalBasic = 0,
+    totalDeductions = 0,
+    totalNet = 0;
+
+  // Employees table
+  document.getElementById("hrTbody").innerHTML =
+    DB.employees
+      .map((e, i) => {
+        const absences = DB.attendance.filter(
+          (a) =>
+            a.empId === e.id &&
+            a.date.startsWith(targetMonthStr) &&
+            a.type === "absent",
+        ).length;
+        const lates = DB.attendance.filter(
+          (a) =>
+            a.empId === e.id &&
+            a.date.startsWith(targetMonthStr) &&
+            a.type === "late",
+        ).length;
+        const bonuses = DB.adjustments
+          .filter(
+            (a) =>
+              a.empId === e.id &&
+              a.month === targetMonthStr &&
+              a.type === "bonus",
+          )
+          .reduce((s, a) => s + a.amount, 0);
+        const extra_deductions = DB.adjustments
+          .filter(
+            (a) =>
+              a.empId === e.id &&
+              a.month === targetMonthStr &&
+              a.type === "deduction",
+          )
+          .reduce((s, a) => s + a.amount, 0);
+        const absenceDeduct = absences * e.dailyDeduct;
+        const lateDeduct = Math.round(lates * (e.dailyDeduct / 2));
+        const totalDeduct = absenceDeduct + lateDeduct + extra_deductions;
+        const allowances = e.transport + e.other + bonuses;
+        const net = Math.max(0, e.basic + allowances - totalDeduct);
+        totalBasic += e.basic + allowances;
+        totalDeductions += totalDeduct;
+        totalNet += net;
+        const col = avatarColors[i % avatarColors.length];
+        return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="emp-avatar" style="width:34px;height:34px;background:${col}22;color:${col};font-size:12px">${e.name.charAt(0)}</div><div><div style="font-size:13px;font-weight:600;color:var(--text)">${e.name}</div><div style="font-size:11px;color:var(--text3)">${e.phone}</div></div></div></td>
+      <td style="color:var(--text2)">${e.job}</td>
+      <td style="font-weight:600">${e.basic.toLocaleString()} ${cur}</td>
+      <td style="color:${absences > 0 ? "var(--danger)" : "var(--text3)"};font-weight:${absences > 0 ? 700 : 400}">${absences} يوم${lates > 0 ? " + " + lates + " تأخير" : ""}</td>
+      <td style="color:var(--success)">${allowances.toLocaleString()} ${cur}</td>
+      <td style="color:${totalDeduct > 0 ? "var(--accent3)" : "var(--text3)"};font-weight:${totalDeduct > 0 ? 700 : 400}">${totalDeduct.toLocaleString()} ${cur}</td>
+      <td style="color:var(--accent);font-weight:700;font-size:15px">${net.toLocaleString()} ${cur}</td>
+      <td><span class="badge ${e.active ? "badge-success" : "badge-danger"}">${e.active ? "نشط" : "موقوف"}</span></td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="openEmpModal(${e.id})">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="openDeductModal(${e.id})" title="خصم / بدل">💰</button>
+        <button class="btn btn-ghost btn-sm" onclick="printEmpSlip(${e.id},'${targetMonthStr}')" title="كشف راتب">🖨</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleEmpActive(${e.id})" style="color:var(--warning)">${e.active ? "إيقاف" : "تفعيل"}</button>
+      </td>
+    </tr>`;
+      })
+      .join("") ||
+    '<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">لا يوجد موظفون — أضف موظفاً جديداً</td></tr>';
+
+  document.getElementById("hr-count").textContent = DB.employees.filter(
+    (e) => e.active,
+  ).length;
+  document.getElementById("hr-total").textContent =
+    totalBasic.toLocaleString() + " " + cur;
+  document.getElementById("hr-deductions").textContent =
+    totalDeductions.toLocaleString() + " " + cur;
+  document.getElementById("hr-net").textContent =
+    totalNet.toLocaleString() + " " + cur;
+
+  // Attendance log
+  const empF = document.getElementById("attEmpFilter").value;
+  const dateF = document.getElementById("attDateFilter").value;
+  const attList = DB.attendance.filter(
+    (a) => (!empF || a.empId == empF) && (!dateF || a.date === dateF),
+  );
+  const typeCls = {
+    absent: "att-badge-absent",
+    late: "att-badge-late",
+    leave: "att-badge-leave",
+  };
+  const typeLabel = { absent: "غياب", late: "تأخير", leave: "إجازة" };
+  document.getElementById("attTbody").innerHTML = attList.length
+    ? attList
+        .map((a) => {
+          const emp = DB.employees.find((e) => e.id === a.empId);
+          return `<tr><td style="color:var(--text);font-weight:500">${emp ? emp.name : "—"}</td><td style="color:var(--text3)">${a.date}</td><td style="font-size:12px;color:var(--text2)">${getDayName(a.date)}</td><td><span class="${typeCls[a.type] || "badge-info"}">${typeLabel[a.type] || a.type}</span></td><td style="color:var(--text2)">${a.reason || "—"}</td><td><button class="btn btn-ghost btn-sm" onclick="deleteAttendance(${a.id})" style="color:var(--danger)">🗑️</button></td></tr>`;
+        })
+        .join("")
+    : '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">لا توجد سجلات في هذا اليوم</td></tr>';
+}
+
+function openEmpModal(id) {
+  editingEmpId = id || null;
+  document.getElementById("empModalTitle").textContent = id
+    ? "تعديل بيانات الموظف"
+    : "موظف جديد";
+  if (id) {
+    const e = DB.employees.find((x) => x.id === id);
+    if (e) {
+      document.getElementById("empName").value = e.name;
+      document.getElementById("empJob").value = e.job;
+      document.getElementById("empPhone").value = e.phone;
+      document.getElementById("empJoinDate").value = e.joinDate;
+      document.getElementById("empBasic").value = e.basic;
+      document.getElementById("empTransport").value = e.transport;
+      document.getElementById("empOther").value = e.other;
+      document.getElementById("empDailyDeduct").value = e.dailyDeduct;
+      document.getElementById("empContractType").value = e.contractType;
+    }
+  } else {
+    ["empName", "empJob", "empPhone"].forEach(
+      (fid) => (document.getElementById(fid).value = ""),
+    );
+    document.getElementById("empJoinDate").value = TODAY;
+    document.getElementById("empBasic").value = "";
+    document.getElementById("empTransport").value = 0;
+    document.getElementById("empOther").value = 0;
+    document.getElementById("empDailyDeduct").value = 0;
+  }
+  openModal("empModal");
+}
+
+function saveEmployee() {
+  const name = document.getElementById("empName").value.trim();
+  const basic = parseFloat(document.getElementById("empBasic").value) || 0;
+  if (!name || !basic) {
+    showToast("يرجى إدخال الاسم والراتب الأساسي");
+    return;
+  }
+  const data = {
+    name,
+    job: document.getElementById("empJob").value,
+    phone: document.getElementById("empPhone").value,
+    joinDate: document.getElementById("empJoinDate").value,
+    basic,
+    transport: parseFloat(document.getElementById("empTransport").value) || 0,
+    other: parseFloat(document.getElementById("empOther").value) || 0,
+    dailyDeduct:
+      parseFloat(document.getElementById("empDailyDeduct").value) || 0,
+    contractType: document.getElementById("empContractType").value,
+    active: true,
+  };
+  if (editingEmpId) {
+    const idx = DB.employees.findIndex((e) => e.id === editingEmpId);
+    if (idx !== -1) DB.employees[idx] = { ...DB.employees[idx], ...data };
+    showToast("تم تعديل بيانات الموظف", "success");
+  } else {
+    DB.employees.push({ id: DB.nextEmpId++, ...data });
+    showToast("تم إضافة الموظف بنجاح", "success");
+  }
+  closeModal("empModal");
+  renderHR();
+}
+
+function toggleEmpActive(id) {
+  const e = DB.employees.find((x) => x.id === id);
+  if (e) {
+    e.active = !e.active;
+    renderHR();
+    showToast(e.active ? "تم تفعيل الموظف" : "تم إيقاف الموظف", "success");
+  }
+}
+
+function openDeductModal(empId) {
+  const sel = document.getElementById("deductEmpId");
+  sel.innerHTML = DB.employees
+    .map(
+      (e) =>
+        `<option value="${e.id}"${e.id === empId ? " selected" : ""}>${e.name}</option>`,
+    )
+    .join("");
+  document.getElementById("deductAmount").value = "";
+  document.getElementById("deductReason").value = "";
+  const now = new Date();
+  document.getElementById("deductMonth").value =
+    now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  openModal("deductModal");
+}
+
+function saveDeduction() {
+  const empId = parseInt(document.getElementById("deductEmpId").value);
+  const amount = parseFloat(document.getElementById("deductAmount").value) || 0;
+  if (!amount) {
+    showToast("يرجى إدخال المبلغ");
+    return;
+  }
+  DB.adjustments.push({
+    id: DB.nextAdjId++,
+    empId,
+    type: document.getElementById("deductType").value,
+    amount,
+    reason: document.getElementById("deductReason").value,
+    month: document.getElementById("deductMonth").value,
+  });
+  closeModal("deductModal");
+  renderHR();
+  showToast("تم التسجيل بنجاح", "success");
+}
+
+function recordAttendance() {
+  const empId = parseInt(document.getElementById("attEmpFilter").value);
+  const date = document.getElementById("attDateFilter").value || TODAY;
+  if (!empId) {
+    showToast("اختر موظفاً أولاً");
+    return;
+  }
+  const types = ["absent", "late", "leave"];
+  const labels = ["غياب", "تأخير", "إجازة"];
+  const choice = prompt(
+    "نوع السجل:\n1- غياب\n2- تأخير\n3- إجازة\nاكتب رقم الاختيار:",
+  );
+  const idx = (parseInt(choice) || 1) - 1;
+  const type = types[Math.max(0, Math.min(2, idx))];
+  const reason = prompt("السبب (اختياري):") || "";
+  DB.attendance.push({ id: DB.nextAttId++, empId, date, type, reason });
+  renderHR();
+  showToast("تم تسجيل " + labels[idx] + " بنجاح", "success");
+}
+
+function deleteAttendance(id) {
+  DB.attendance = DB.attendance.filter((a) => a.id !== id);
+  renderHR();
+  showToast("تم حذف السجل", "success");
+}
+
+function printPayroll() {
+  const cur = DB.settings.currency;
+  const now = new Date();
+  const monthStr =
+    now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  const monthName = now.toLocaleDateString("ar-EG", {
+    month: "long",
+    year: "numeric",
+  });
+  let rows = "",
+    grandNet = 0;
+  DB.employees.forEach((e, i) => {
+    const absences = DB.attendance.filter(
+      (a) =>
+        a.empId === e.id && a.date.startsWith(monthStr) && a.type === "absent",
+    ).length;
+    const lates = DB.attendance.filter(
+      (a) =>
+        a.empId === e.id && a.date.startsWith(monthStr) && a.type === "late",
+    ).length;
+    const bonuses = DB.adjustments
+      .filter(
+        (a) => a.empId === e.id && a.month === monthStr && a.type === "bonus",
+      )
+      .reduce((s, a) => s + a.amount, 0);
+    const extraDeduct = DB.adjustments
+      .filter(
+        (a) =>
+          a.empId === e.id && a.month === monthStr && a.type === "deduction",
+      )
+      .reduce((s, a) => s + a.amount, 0);
+    const absDeduct = absences * e.dailyDeduct,
+      lateDeduct = Math.round(lates * (e.dailyDeduct / 2));
+    const totalDeduct = absDeduct + lateDeduct + extraDeduct;
+    const allowances = e.transport + e.other + bonuses;
+    const net = Math.max(0, e.basic + allowances - totalDeduct);
+    grandNet += net;
+    rows += `<tr><td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:13px">${e.name}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:12px;color:#666">${e.job}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center">${e.basic.toLocaleString()}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;color:#27ae60">${allowances.toLocaleString()}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;color:#e74c3c">${totalDeduct.toLocaleString()}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:center;font-weight:700;color:#6c63ff">${net.toLocaleString()}</td></tr>`;
+  });
+  document.getElementById("payslipArea").innerHTML = `
+    <div style="text-align:center;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #6c63ff">
+      <div style="font-size:20px;font-weight:700;color:#1a1a2e">${DB.settings.bizName}</div>
+      <div style="font-size:14px;color:#6c63ff;margin-top:4px">كشف رواتب — ${monthName}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="background:#6c63ff"><th style="padding:9px 10px;color:white;text-align:right;font-size:12px">الموظف</th><th style="padding:9px 10px;color:white;text-align:right;font-size:12px">الوظيفة</th><th style="padding:9px 10px;color:white;text-align:center;font-size:12px">الأساسي</th><th style="padding:9px 10px;color:white;text-align:center;font-size:12px">البدلات</th><th style="padding:9px 10px;color:white;text-align:center;font-size:12px">الخصومات</th><th style="padding:9px 10px;color:white;text-align:center;font-size:12px">الصافي</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr style="background:#6c63ff10"><td colspan="5" style="padding:10px;font-weight:700;text-align:right">إجمالي الرواتب المستحقة:</td><td style="padding:10px;font-weight:700;color:#6c63ff;text-align:center;font-size:16px">${grandNet.toLocaleString()} ${cur}</td></tr></tfoot>
+    </table>
+    <div style="text-align:center;margin-top:16px;color:#999;font-size:11px">تاريخ الطباعة: ${new Date().toLocaleDateString("ar-EG")}</div>`;
+  openModal("payslipModal");
+}
+
+function doPrintPayroll() {
+  const content = document.getElementById("payslipArea").innerHTML;
+  const w = window.open("", "_blank", "width=800,height=600");
+  w.document.write(
+    `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>كشف رواتب</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Cairo,sans-serif;background:white;padding:20px;direction:rtl;}@page{margin:10mm;}</style></head><body><div style="max-width:700px;margin:0 auto">${content}</div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}}<\/script></body></html>`,
+  );
+  w.document.close();
+}
+
+function printEmpSlip(empId, monthStr) {
+  const e = DB.employees.find((x) => x.id === empId);
+  if (!e) return;
+  const cur = DB.settings.currency;
+  const absences = DB.attendance.filter(
+    (a) =>
+      a.empId === empId && a.date.startsWith(monthStr) && a.type === "absent",
+  ).length;
+  const lates = DB.attendance.filter(
+    (a) =>
+      a.empId === empId && a.date.startsWith(monthStr) && a.type === "late",
+  ).length;
+  const bonuses = DB.adjustments.filter(
+    (a) => a.empId === empId && a.month === monthStr && a.type === "bonus",
+  );
+  const extraDeductions = DB.adjustments.filter(
+    (a) => a.empId === empId && a.month === monthStr && a.type === "deduction",
+  );
+  const totalBonus = bonuses.reduce((s, a) => s + a.amount, 0);
+  const totalExtraDeduct = extraDeductions.reduce((s, a) => s + a.amount, 0);
+  const absDeduct = absences * e.dailyDeduct,
+    lateDeduct = Math.round(lates * (e.dailyDeduct / 2));
+  const totalDeduct = absDeduct + lateDeduct + totalExtraDeduct;
+  const allowances = e.transport + e.other + totalBonus;
+  const net = Math.max(0, e.basic + allowances - totalDeduct);
+  const monthName = new Date(monthStr + "-01").toLocaleDateString("ar-EG", {
+    month: "long",
+    year: "numeric",
+  });
+  const html = `<div style="font-family:Cairo,sans-serif;direction:rtl;max-width:500px;margin:0 auto;padding:24px;border:2px solid #6c63ff;border-radius:12px">
+    <div style="text-align:center;margin-bottom:18px;padding-bottom:14px;border-bottom:3px solid #6c63ff">
+      <div style="font-size:20px;font-weight:700;color:#1a1a2e">${DB.settings.bizName}</div>
+      <div style="font-size:13px;color:#6c63ff">قسيمة راتب — ${monthName}</div>
+    </div>
+    <div style="background:#f8f8ff;border-radius:8px;padding:12px 14px;margin-bottom:16px;border-right:3px solid #6c63ff">
+      <div style="font-size:16px;font-weight:700;color:#1a1a2e">${e.name}</div>
+      <div style="font-size:13px;color:#666">${e.job}</div>
+      <div style="font-size:12px;color:#999">تعيين: ${e.joinDate}</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
+      <tr style="background:#f0f0f0"><td style="padding:8px 12px;font-size:13px;font-weight:600" colspan="2">المستحقات</td></tr>
+      <tr><td style="padding:7px 12px;font-size:13px;color:#666;border-bottom:1px solid #f0f0f0">الراتب الأساسي</td><td style="padding:7px 12px;font-size:13px;text-align:left;border-bottom:1px solid #f0f0f0;color:#27ae60;font-weight:600">${e.basic.toLocaleString()} ${cur}</td></tr>
+      <tr><td style="padding:7px 12px;font-size:13px;color:#666;border-bottom:1px solid #f0f0f0">بدل النقل</td><td style="padding:7px 12px;font-size:13px;text-align:left;border-bottom:1px solid #f0f0f0;color:#27ae60">${e.transport.toLocaleString()} ${cur}</td></tr>
+      ${e.other > 0 ? `<tr><td style="padding:7px 12px;font-size:13px;color:#666;border-bottom:1px solid #f0f0f0">بدلات أخرى</td><td style="padding:7px 12px;font-size:13px;text-align:left;border-bottom:1px solid #f0f0f0;color:#27ae60">${e.other.toLocaleString()} ${cur}</td></tr>` : ""}
+      ${bonuses.map((b) => `<tr><td style="padding:7px 12px;font-size:13px;color:#666;border-bottom:1px solid #f0f0f0">مكافأة: ${b.reason}</td><td style="padding:7px 12px;font-size:13px;text-align:left;border-bottom:1px solid #f0f0f0;color:#27ae60">${b.amount.toLocaleString()} ${cur}</td></tr>`).join("")}
+      <tr style="background:#f0f0f0"><td style="padding:8px 12px;font-size:13px;font-weight:600" colspan="2">الخصومات</td></tr>
+      ${absences > 0 ? `<tr><td style="padding:7px 12px;font-size:13px;color:#666;border-bottom:1px solid #f0f0f0">خصم غياب (${absences} يوم)</td><td style="padding:7px 12px;font-size:13px;text-align:left;border-bottom:1px solid #f0f0f0;color:#e74c3c">- ${absDeduct.toLocaleString()} ${cur}</td></tr>` : ""}
+      ${lates > 0 ? `<tr><td style="padding:7px 12px;font-size:13px;color:#666;border-bottom:1px solid #f0f0f0">خصم تأخير (${lates} مرة)</td><td style="padding:7px 12px;font-size:13px;text-align:left;border-bottom:1px solid #f0f0f0;color:#e74c3c">- ${lateDeduct.toLocaleString()} ${cur}</td></tr>` : ""}
+      ${extraDeductions.map((d) => `<tr><td style="padding:7px 12px;font-size:13px;color:#666;border-bottom:1px solid #f0f0f0">خصم: ${d.reason}</td><td style="padding:7px 12px;font-size:13px;text-align:left;border-bottom:1px solid #f0f0f0;color:#e74c3c">- ${d.amount.toLocaleString()} ${cur}</td></tr>`).join("")}
+    </table>
+    <div style="background:#6c63ff;border-radius:8px;padding:14px;display:flex;justify-content:space-between;align-items:center">
+      <span style="color:white;font-size:16px;font-weight:700">صافي الراتب</span>
+      <span style="color:white;font-size:22px;font-weight:700">${net.toLocaleString()} ${cur}</span>
+    </div>
+    <div style="text-align:center;margin-top:16px;color:#999;font-size:11px">طُبع في: ${new Date().toLocaleDateString("ar-EG")}</div>
+  </div>`;
+  document.getElementById("payslipArea").innerHTML = html;
+  openModal("payslipModal");
+}
+
+// ═══════════════════════════════════════════
+// BULK PRINT BY RANGE
+// ═══════════════════════════════════════════
+function openPrintRangeModal() {
+  openModal("printRangeModal");
+  updateRangePreview();
+}
+function setRangeType(type) {
+  currentRangeType = type;
+  document.getElementById("rangeByNumSection").style.display =
+    type === "num" ? "" : "none";
+  document.getElementById("rangeByDateSection").style.display =
+    type === "date" ? "" : "none";
+  document.getElementById("rangeByManualSection").style.display =
+    type === "manual" ? "" : "none";
+  ["rangeByNum", "rangeByDate", "rangeByManual"].forEach((id) =>
+    document.getElementById(id).classList.remove("active-range"),
+  );
+  const map = {
+    num: "rangeByNum",
+    date: "rangeByDate",
+    manual: "rangeByManual",
+  };
+  document.getElementById(map[type]).classList.add("active-range");
+  updateRangePreview();
+}
+function getRangeInvoices() {
+  if (currentRangeType === "num") {
+    const from = parseInt(document.getElementById("rangeFrom").value) || 1;
+    const to = parseInt(document.getElementById("rangeTo").value) || 1;
+    return DB.invoices.filter((i) => i.id >= from && i.id <= to);
+  } else if (currentRangeType === "date") {
+    const from = document.getElementById("rangeDateFrom").value;
+    const to = document.getElementById("rangeDateTo").value;
+    return DB.invoices.filter(
+      (i) => (!from || i.date >= from) && (!to || i.date <= to),
+    );
+  } else {
+    const manual = document.getElementById("rangeManual").value;
+    const ids = manual
+      .split(",")
+      .map((x) => parseInt(x.trim()))
+      .filter(Boolean);
+    return ids
+      .map((id) => DB.invoices.find((i) => i.id === id))
+      .filter(Boolean);
+  }
+}
+function updateRangePreview() {
+  const invs = getRangeInvoices();
+  const total = invs.reduce((s, i) => s + i.total, 0);
+  document.getElementById("rangePreview").textContent =
+    "سيتم طباعة " +
+    invs.length +
+    " فاتورة — الإجمالي: " +
+    total.toFixed(2) +
+    " " +
+    DB.settings.currency;
+}
+function previewRangeInvoices() {
+  const invs = getRangeInvoices();
+  if (!invs.length) {
+    showToast("لا توجد فواتير في هذا النطاق", "error");
+    return;
+  }
+  closeModal("printRangeModal");
+  openBulkPrint(invs, "معاينة " + invs.length + " فاتورة");
+}
+function printRangeInvoices() {
+  const invs = getRangeInvoices();
+  if (!invs.length) {
+    showToast("لا توجد فواتير في هذا النطاق", "error");
+    return;
+  }
+  const content = invs.map((inv) => buildInvoiceHTML(inv)).join("");
+  const w = window.open("", "_blank", "width=640,height=900");
+  w.document.write(
+    `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>فواتير</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Cairo,sans-serif;background:white;padding:16px;direction:rtl;}@page{margin:8mm;}</style></head><body><div style="max-width:500px;margin:0 auto">${content}</div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}}<\/script></body></html>`,
+  );
+  w.document.close();
+  closeModal("printRangeModal");
+}
+
 function openModal(id) {
   document.getElementById(id).classList.add("open");
 }
@@ -1504,3 +2130,43 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 updateClock();
+initTheme();
+["rangeFrom", "rangeTo", "rangeDateFrom", "rangeDateTo", "rangeManual"].forEach(
+  (id) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", updateRangePreview);
+  },
+);
+
+(function () {
+  let startX = 0,
+    startY = 0;
+  document.addEventListener(
+    "touchstart",
+    (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    },
+    { passive: true },
+  );
+  document.addEventListener(
+    "touchend",
+    (e) => {
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = Math.abs(e.changedTouches[0].clientY - startY);
+      if (dy > 60) return; // mostly vertical swipe, ignore
+      if (
+        dx < -60 &&
+        document.getElementById("sidebar").classList.contains("closed")
+      )
+        return; // left swipe but closed already
+      if (dx > 60 && startX < 40) {
+        openSidebar();
+      } // swipe right from edge → open
+      if (dx < -60) {
+        closeSidebar();
+      } // swipe left → close
+    },
+    { passive: true },
+  );
+})();
