@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="./styel.css" />
   </head>
   <body>
-    <!-- LOGIN -->
+    <!-- Login Screen -->
     <div class="login-screen" id="loginScreen">
       <div class="login-box">
         <div class="login-logo">🏪</div>
@@ -59,13 +59,13 @@
         </div>
       </div>
     </div>
-
-    <!-- SIDEBAR -->
+    <!-- Sidebar Overlay -->
     <div
       class="sidebar-overlay"
       id="sideOverlay"
       onclick="closeSidebar()"
     ></div>
+    <!-- Sidebar -->
     <div class="sidebar closed" id="sidebar" style="display: none">
       <div class="sidebar-logo" style="position: relative">
         <div class="logo-icon">🏪</div>
@@ -97,8 +97,7 @@
         </div>
       </div>
     </div>
-
-    <!-- MAIN -->
+    <!-- Main Content -->
     <div class="main" id="mainArea" style="display: none">
       <div class="topbar">
         <div style="display: flex; align-items: center; gap: 10px">
@@ -130,7 +129,6 @@
       </div>
 
       <div class="content">
-        <!-- DASHBOARD -->
         <div class="page active" id="page-dashboard">
           <div class="metric-grid">
             <div class="metric-card">
@@ -170,7 +168,6 @@
           </div>
         </div>
 
-        <!-- POS -->
         <div class="page" id="page-pos">
           <div class="pos-layout">
             <div class="pos-left">
@@ -286,7 +283,6 @@
           </div>
         </div>
 
-        <!-- PRODUCTS -->
         <div class="page" id="page-products">
           <div class="toolbar">
             <div class="search-bar">
@@ -329,7 +325,6 @@
           </div>
         </div>
 
-        <!-- INVENTORY -->
         <div class="page" id="page-inventory">
           <div class="toolbar">
             <div class="search-bar">
@@ -374,7 +369,6 @@
           </div>
         </div>
 
-        <!-- CUSTOMERS -->
         <div class="page" id="page-customers">
           <div class="toolbar">
             <div class="search-bar">
@@ -390,7 +384,6 @@
           <div class="card" id="custList"></div>
         </div>
 
-        <!-- CUSTOMER HISTORY -->
         <div class="page" id="page-custhistory">
           <div
             style="
@@ -452,7 +445,6 @@
           </div>
         </div>
 
-        <!-- SUPPLIERS -->
         <div class="page" id="page-suppliers">
           <div class="toolbar">
             <button class="btn btn-primary" onclick="openSupplierModal()">
@@ -477,7 +469,6 @@
           </div>
         </div>
 
-        <!-- INVOICES -->
         <div class="page" id="page-invoices">
           <div class="date-filter-bar">
             <label>من:</label
@@ -573,7 +564,6 @@
           </div>
         </div>
 
-        <!-- PURCHASES -->
         <div class="page" id="page-purchases">
           <div class="toolbar">
             <button class="btn btn-primary" onclick="openPurchaseModal()">
@@ -600,7 +590,6 @@
           </div>
         </div>
 
-        <!-- REPORTS -->
         <div class="page" id="page-reports">
           <div class="reports-grid">
             <div class="report-card" onclick="showReport('sales')">
@@ -639,7 +628,6 @@
           </div>
         </div>
 
-        <!-- USERS -->
         <div class="page" id="page-users">
           <div class="toolbar">
             <button class="btn btn-primary" onclick="openModal('userModal')">
@@ -649,7 +637,6 @@
           <div class="users-grid" id="usersGrid"></div>
         </div>
 
-        <!-- HR / EMPLOYEES -->
         <div class="page" id="page-hr">
           <div class="toolbar">
             <button class="btn btn-primary" onclick="openEmpModal()">
@@ -766,7 +753,6 @@
           </div>
         </div>
 
-        <!-- SETTINGS -->
         <div class="page" id="page-settings">
           <div style="max-width: 640px">
             <div style="margin-bottom: 28px">
@@ -871,8 +857,7 @@
         </div>
       </div>
     </div>
-
-    <!-- MODALS -->
+    <!-- Product Modal -->
     <div class="modal-overlay" id="productModal">
       <div class="modal">
         <div class="modal-header">
@@ -998,7 +983,7 @@
         </div>
       </div>
     </div>
-
+    <!-- Purchase Modal -->
     <div class="modal-overlay" id="purchaseModal">
       <div class="modal">
         <div class="modal-header">
@@ -1052,7 +1037,7 @@
         </div>
       </div>
     </div>
-
+    <!-- Supplier Modal -->
     <div class="modal-overlay" id="supplierModal">
       <div class="modal">
         <div class="modal-header">
@@ -1088,7 +1073,7 @@
         </div>
       </div>
     </div>
-
+    <!-- Customer Modal -->
     <div class="modal-overlay" id="customerModal">
       <div class="modal">
         <div class="modal-header">
@@ -1124,7 +1109,7 @@
         </div>
       </div>
     </div>
-
+    <!-- Stock Take Modal -->
     <div class="modal-overlay" id="stockTakeModal">
       <div class="modal" style="max-width: 660px">
         <div class="modal-header">
@@ -1155,7 +1140,7 @@
         </div>
       </div>
     </div>
-
+    <!-- Success Modal -->
     <div class="modal-overlay" id="successModal">
       <div class="modal" style="max-width: 400px; text-align: center">
         <div class="success-icon-big">✓</div>
@@ -1173,17 +1158,31 @@
           style="font-size: 14px; color: var(--text2); margin-bottom: 20px"
           id="successDetails"
         ></div>
-        <div style="display: flex; gap: 10px; justify-content: center">
+        <div
+          style="
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+          "
+        >
           <button class="btn btn-ghost" onclick="newSale()">
             فاتورة جديدة
           </button>
-          <button class="btn btn-primary" onclick="printInvoice()">
-            🖨️ طباعة الفاتورة
+          <button
+            class="btn btn-primary"
+            onclick="printInvoice('a4')"
+            style="background: #4ecdc4; border: none"
+          >
+            🖨️ طباعة A4
+          </button>
+          <button class="btn btn-primary" onclick="printInvoice('80mm')">
+            🖨️ طباعة ريسيت
           </button>
         </div>
       </div>
     </div>
-
+    <!-- Print Preview Modal -->
     <div class="modal-overlay" id="printPreviewModal">
       <div class="modal" style="max-width: 520px; padding: 0; overflow: hidden">
         <div
@@ -1199,9 +1198,17 @@
             >معاينة الفاتورة</span
           >
           <div style="display: flex; gap: 8px">
-            <button class="btn btn-primary btn-sm" onclick="doPrint()">
-              🖨️ طباعة</button
-            ><button
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="doPrint('a4')"
+              style="background: #4ecdc4; border: none"
+            >
+              🖨️ A4
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="doPrint('80mm')">
+              🖨️ ريسيت
+            </button>
+            <button
               class="modal-close"
               onclick="closeModal('printPreviewModal')"
             >
@@ -1233,7 +1240,7 @@
         </div>
       </div>
     </div>
-
+    <!-- Bulk Print Modal -->
     <div class="modal-overlay" id="bulkPrintModal">
       <div class="modal" style="max-width: 520px; padding: 0; overflow: hidden">
         <div
@@ -1251,9 +1258,20 @@
             >طباعة الفواتير</span
           >
           <div style="display: flex; gap: 8px">
-            <button class="btn btn-primary btn-sm" onclick="doBulkPrint()">
-              🖨️ طباعة الكل</button
-            ><button class="modal-close" onclick="closeModal('bulkPrintModal')">
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="doBulkPrint('a4')"
+              style="background: #4ecdc4; border: none"
+            >
+              🖨️ الكل A4
+            </button>
+            <button
+              class="btn btn-primary btn-sm"
+              onclick="doBulkPrint('80mm')"
+            >
+              🖨️ الكل ريسيت
+            </button>
+            <button class="modal-close" onclick="closeModal('bulkPrintModal')">
               ✕
             </button>
           </div>
@@ -1270,7 +1288,7 @@
         </div>
       </div>
     </div>
-
+    <!-- User Modal -->
     <div class="modal-overlay" id="userModal">
       <div class="modal">
         <div class="modal-header">
@@ -1319,8 +1337,7 @@
         </div>
       </div>
     </div>
-
-    <!-- EMPLOYEE MODAL -->
+    <!-- Employee Modal -->
     <div class="modal-overlay" id="empModal">
       <div class="modal" style="max-width: 580px">
         <div class="modal-header">
@@ -1421,8 +1438,7 @@
         </div>
       </div>
     </div>
-
-    <!-- DEDUCTION MODAL -->
+    <!-- Deduction Modal -->
     <div class="modal-overlay" id="deductModal">
       <div class="modal" style="max-width: 460px">
         <div class="modal-header">
@@ -1474,8 +1490,7 @@
         </div>
       </div>
     </div>
-
-    <!-- BULK PRINT RANGE MODAL -->
+    <!-- Print Range Modal -->
     <div class="modal-overlay" id="printRangeModal">
       <div class="modal" style="max-width: 480px">
         <div class="modal-header">
@@ -1589,14 +1604,20 @@
           <button class="btn btn-ghost" onclick="previewRangeInvoices()">
             👁 معاينة
           </button>
-          <button class="btn btn-primary" onclick="printRangeInvoices()">
-            🖨 طباعة الان
+          <button
+            class="btn btn-primary"
+            onclick="printRangeInvoices('a4')"
+            style="background: #4ecdc4; border: none"
+          >
+            🖨 A4
+          </button>
+          <button class="btn btn-primary" onclick="printRangeInvoices('80mm')">
+            🖨 ريسيت
           </button>
         </div>
       </div>
     </div>
-
-    <!-- PAYSLIP PRINT MODAL -->
+    <!-- Payslip Modal -->
     <div class="modal-overlay" id="payslipModal">
       <div class="modal" style="max-width: 500px; padding: 0; overflow: hidden">
         <div

@@ -437,27 +437,23 @@ const DB = {
   nextAttId: 4,
   nextAdjId: 3,
 };
+
 // ═══════════════════════════════════════════
 // 💾 نظام الحفظ والاسترجاع التلقائي (Auto-Save)
 // ═══════════════════════════════════════════
 function loadDB() {
   const savedData = localStorage.getItem("erp_super_data");
   if (savedData) {
-    // استبدال البيانات الافتراضية بالبيانات المحفوظة
     Object.assign(DB, JSON.parse(savedData));
   }
 }
-
 function saveDB() {
   localStorage.setItem("erp_super_data", JSON.stringify(DB));
 }
-
-// 1. استرجاع البيانات فوراً أول ما الصفحة تفتح
 loadDB();
-
-// 2. حفظ تلقائي للبيانات كل ثانيتين (عشان متعدلش في كل دوال الكود)
 setInterval(saveDB, 2000);
 // ═══════════════════════════════════════════
+
 let cart = {},
   posActiveCat = "all",
   activePayment = "cash",
@@ -528,7 +524,6 @@ function doLogin() {
   const sbEl = document.getElementById("sidebar");
   sbEl.style.display = "flex";
   document.getElementById("mainArea").style.display = "flex";
-  // open sidebar on desktop, keep closed on mobile
   if (window.innerWidth >= 768) {
     openSidebar();
   }
@@ -908,14 +903,25 @@ function newSale() {
   document.getElementById("discInput").value = 0;
   closeModal("successModal");
 }
-function printInvoice() {
+
+// ═══════════════════════════════════════════
+// 🖨️ محرك الطباعة الشامل (A4 + 80mm)
+// ═══════════════════════════════════════════
+function printInvoice(size = "a4") {
   closeModal("successModal");
   const inv = DB.invoices.find((i) => i.id === lastInvoiceId);
-  if (inv) openPrintPreview(inv);
+  if (inv) {
+    document.getElementById("printArea").innerHTML = buildInvoiceHTML(inv);
+    doPrint(size);
+  }
 }
 function printInvoiceById(id) {
   const inv = DB.invoices.find((i) => i.id === id);
   if (inv) openPrintPreview(inv);
+}
+function openPrintPreview(inv) {
+  document.getElementById("printArea").innerHTML = buildInvoiceHTML(inv);
+  openModal("printPreviewModal");
 }
 
 function buildInvoiceHTML(inv) {
@@ -924,64 +930,132 @@ function buildInvoiceHTML(inv) {
   const itemsHtml = inv.items
     .map(
       (item) =>
-        `<tr><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;color:#333">${item.name || "صنف"}</td><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;color:#666;text-align:center">${item.unit || ""}</td><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;color:#666;text-align:center">${item.qty}</td><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;color:#666;text-align:center">${item.price.toFixed(2)}</td><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;font-weight:600;color:#333;text-align:left">${(item.qty * item.price).toFixed(2)}</td></tr>`,
+        `<tr><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;color:#333">${item.name || "صنف"}</td><td class="hide-80" style="padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;color:#666;text-align:center">${item.unit || ""}</td><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;color:#666;text-align:center">${item.qty}</td><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;color:#666;text-align:center">${item.price.toFixed(2)}</td><td style="padding:9px 12px;border-bottom:1px solid #eee;font-size:13px;font-weight:600;color:#333;text-align:left">${(item.qty * item.price).toFixed(2)}</td></tr>`,
     )
     .join("");
   const discRow =
     inv.discount > 0
-      ? `<tr><td colspan="3" style="padding:6px 12px;font-size:13px;color:#666;text-align:right;border-bottom:1px solid #f0f0f0">الخصم:</td><td colspan="2" style="padding:6px 12px;font-size:13px;font-weight:600;color:#e74c3c;text-align:left;border-bottom:1px solid #f0f0f0">- ${inv.discount.toFixed(2)} ${cur}</td></tr>`
+      ? `<tr><td colspan="3" class="tf-span" style="padding:6px 12px;font-size:13px;color:#666;text-align:right;border-bottom:1px solid #f0f0f0">الخصم:</td><td colspan="2" class="tf-val" style="padding:6px 12px;font-size:13px;font-weight:600;color:#e74c3c;text-align:left;border-bottom:1px solid #f0f0f0">- ${inv.discount.toFixed(2)} ${cur}</td></tr>`
       : "";
   const remRow =
     inv.method === "credit" && inv.paid < inv.total
-      ? `<tr><td colspan="3" style="padding:6px 12px;font-size:13px;color:#666;text-align:right;border-top:1px solid #eee">المدفوع:</td><td colspan="2" style="padding:6px 12px;font-size:13px;font-weight:600;color:#27ae60;text-align:left;border-top:1px solid #eee">${inv.paid.toFixed(2)} ${cur}</td></tr><tr><td colspan="3" style="padding:6px 12px;font-size:13px;color:#666;text-align:right">المتبقي:</td><td colspan="2" style="padding:6px 12px;font-size:13px;font-weight:700;color:#e74c3c;text-align:left">${(inv.total - inv.paid).toFixed(2)} ${cur}</td></tr>`
+      ? `<tr><td colspan="3" class="tf-span" style="padding:6px 12px;font-size:13px;color:#666;text-align:right;border-top:1px solid #eee">المدفوع:</td><td colspan="2" class="tf-val" style="padding:6px 12px;font-size:13px;font-weight:600;color:#27ae60;text-align:left;border-top:1px solid #eee">${inv.paid.toFixed(2)} ${cur}</td></tr><tr><td colspan="3" class="tf-span" style="padding:6px 12px;font-size:13px;color:#666;text-align:right">المتبقي:</td><td colspan="2" class="tf-val" style="padding:6px 12px;font-size:13px;font-weight:700;color:#e74c3c;text-align:left">${(inv.total - inv.paid).toFixed(2)} ${cur}</td></tr>`
       : "";
-  return `<div style="font-family:'Cairo',sans-serif;direction:rtl;color:#333;margin-bottom:28px;padding-bottom:20px;border-bottom:2px dashed #ddd">
-    <div style="text-align:center;margin-bottom:18px;padding-bottom:14px;border-bottom:3px solid #6c63ff">
-      <div style="font-size:22px;font-weight:700;color:#1a1a2e;margin-bottom:2px">${DB.settings.bizName}</div>
-      ${DB.settings.address ? `<div style="font-size:12px;color:#888;margin-bottom:2px">${DB.settings.address}</div>` : ""}
-      ${DB.settings.phone ? `<div style="font-size:12px;color:#888">📞 ${DB.settings.phone}</div>` : ""}
+
+  return `<div class="inv-wrapper" style="font-family:'Cairo',sans-serif;direction:rtl;color:#333;margin-bottom:28px;padding-bottom:20px;border-bottom:2px dashed #ddd">
+    <div class="inv-header" style="text-align:center;margin-bottom:18px;padding-bottom:14px;border-bottom:3px solid #6c63ff">
+      <div class="inv-title" style="font-size:22px;font-weight:700;color:#1a1a2e;margin-bottom:2px">${DB.settings.bizName}</div>
+      ${DB.settings.address ? `<div class="inv-address" style="font-size:12px;color:#888;margin-bottom:2px">${DB.settings.address}</div>` : ""}
+      ${DB.settings.phone ? `<div class="inv-phone" style="font-size:12px;color:#888">📞 ${DB.settings.phone}</div>` : ""}
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+    <div class="inv-meta" style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
       <div>
-        <div style="font-size:20px;font-weight:700;color:#6c63ff">${inv.num}</div>
-        <div style="font-size:12px;color:#999;margin-top:2px">${inv.dateTime || inv.date}</div>
-        <div style="font-size:12px;color:#888">${getDayName(inv.date)}</div>
+        <div class="inv-num" style="font-size:20px;font-weight:700;color:#6c63ff">${inv.num}</div>
+        <div class="inv-date" style="font-size:12px;color:#999;margin-top:2px">${inv.dateTime || inv.date}</div>
+        <div class="inv-day hide-80" style="font-size:12px;color:#888">${getDayName(inv.date)}</div>
       </div>
       <div style="text-align:left">
-        <span style="background:${statusColors[inv.status]}20;color:${statusColors[inv.status]};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid ${statusColors[inv.status]}40">${statusLabels[inv.status]}</span>
-        <div style="font-size:12px;color:#888;margin-top:4px;text-align:center">${payLabels[inv.method] || inv.method}</div>
+        <span class="inv-status" style="background:${statusColors[inv.status]}20;color:${statusColors[inv.status]};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid ${statusColors[inv.status]}40">${statusLabels[inv.status]}</span>
+        <div class="inv-method" style="font-size:12px;color:#888;margin-top:4px;text-align:center">${payLabels[inv.method] || inv.method}</div>
       </div>
     </div>
-    ${cust ? `<div style="background:#f8f8ff;border-radius:8px;padding:12px 14px;margin-bottom:16px;border-right:3px solid #6c63ff"><div style="font-size:11px;color:#999;margin-bottom:3px">بيانات العميل</div><div style="font-size:14px;font-weight:600;color:#1a1a2e">${cust.name}</div>${cust.phone ? `<div style="font-size:12px;color:#666">${cust.phone}</div>` : ""}</div>` : ""}
-    <table style="width:100%;border-collapse:collapse;margin-bottom:0;border-radius:8px 8px 0 0;overflow:hidden">
-      <thead><tr style="background:linear-gradient(135deg,#6c63ff,#8b7ff5)"><th style="padding:10px 12px;font-size:12px;color:white;text-align:right;font-weight:600">الصنف</th><th style="padding:10px 12px;font-size:12px;color:white;text-align:center;font-weight:600">الوحدة</th><th style="padding:10px 12px;font-size:12px;color:white;text-align:center;font-weight:600">الكمية</th><th style="padding:10px 12px;font-size:12px;color:white;text-align:center;font-weight:600">السعر</th><th style="padding:10px 12px;font-size:12px;color:white;text-align:left;font-weight:600">الإجمالي</th></tr></thead>
+    ${cust ? `<div class="inv-cust" style="background:#f8f8ff;border-radius:8px;padding:12px 14px;margin-bottom:16px;border-right:3px solid #6c63ff"><div class="hide-80" style="font-size:11px;color:#999;margin-bottom:3px">بيانات العميل</div><div style="font-size:14px;font-weight:600;color:#1a1a2e">${cust.name}</div>${cust.phone ? `<div style="font-size:12px;color:#666">${cust.phone}</div>` : ""}</div>` : ""}
+    <table class="inv-table" style="width:100%;border-collapse:collapse;margin-bottom:0;border-radius:8px 8px 0 0;overflow:hidden">
+      <thead><tr style="background:linear-gradient(135deg,#6c63ff,#8b7ff5)"><th style="padding:10px 12px;font-size:12px;color:white;text-align:right;font-weight:600">الصنف</th><th class="hide-80" style="padding:10px 12px;font-size:12px;color:white;text-align:center;font-weight:600">الوحدة</th><th style="padding:10px 12px;font-size:12px;color:white;text-align:center;font-weight:600">الكمية</th><th style="padding:10px 12px;font-size:12px;color:white;text-align:center;font-weight:600">السعر</th><th style="padding:10px 12px;font-size:12px;color:white;text-align:left;font-weight:600">الإجمالي</th></tr></thead>
       <tbody>${itemsHtml}</tbody>
     </table>
-    <table style="width:100%;border-collapse:collapse;background:#f9f9f9;border-radius:0 0 8px 8px;overflow:hidden">
-      <tr><td colspan="3" style="padding:8px 12px;font-size:13px;color:#666;text-align:right;border-bottom:1px solid #eee">المجموع الفرعي:</td><td colspan="2" style="padding:8px 12px;font-size:13px;font-weight:600;color:#333;text-align:left;border-bottom:1px solid #eee">${(inv.subtotal || inv.total).toFixed(2)} ${cur}</td></tr>
+    <table class="inv-totals" style="width:100%;border-collapse:collapse;background:#f9f9f9;border-radius:0 0 8px 8px;overflow:hidden">
+      <tr><td colspan="3" class="tf-span" style="padding:8px 12px;font-size:13px;color:#666;text-align:right;border-bottom:1px solid #eee">المجموع الفرعي:</td><td colspan="2" class="tf-val" style="padding:8px 12px;font-size:13px;font-weight:600;color:#333;text-align:left;border-bottom:1px solid #eee">${(inv.subtotal || inv.total).toFixed(2)} ${cur}</td></tr>
       ${discRow}
-      <tr style="background:#6c63ff10"><td colspan="3" style="padding:12px 12px;font-size:15px;font-weight:700;color:#1a1a2e;text-align:right">الإجمالي الكلي:</td><td colspan="2" style="padding:12px 12px;font-size:18px;font-weight:700;color:#6c63ff;text-align:left">${inv.total.toFixed(2)} ${cur}</td></tr>
+      <tr style="background:#6c63ff10"><td colspan="3" class="tf-span" style="padding:12px 12px;font-size:15px;font-weight:700;color:#1a1a2e;text-align:right">الإجمالي الكلي:</td><td colspan="2" class="tf-val" style="padding:12px 12px;font-size:18px;font-weight:700;color:#6c63ff;text-align:left">${inv.total.toFixed(2)} ${cur}</td></tr>
       ${remRow}
     </table>
-    <div style="text-align:center;margin-top:20px;padding-top:14px;border-top:1px dashed #ddd">
-      <div style="font-size:20px;margin-bottom:6px">🙏</div>
+    <div class="inv-footer" style="text-align:center;margin-top:20px;padding-top:14px;border-top:1px dashed #ddd">
+      <div class="hide-80" style="font-size:20px;margin-bottom:6px">🙏</div>
       <div style="font-size:14px;color:#6c63ff;font-weight:600">${DB.settings.thanks}</div>
       <div style="font-size:11px;color:#bbb;margin-top:6px">نظام إدارة ERP/POS</div>
     </div>
   </div>`;
 }
 
-function openPrintPreview(inv) {
-  document.getElementById("printArea").innerHTML = buildInvoiceHTML(inv);
-  openModal("printPreviewModal");
+function getPrintStyles(size) {
+  if (size === "80mm") {
+    return `
+      @page { margin: 0; size: 80mm auto; }
+      body { width: 75mm; margin: 0 auto; padding: 5mm 2mm; font-family: 'Cairo', sans-serif; direction: rtl; color: #000; background: #fff; }
+      .inv-wrapper { border: none !important; margin: 0 !important; padding: 0 !important; page-break-after: always; }
+      .inv-header { border-bottom: 2px dashed #000 !important; margin-bottom: 8px !important; padding-bottom: 8px !important; }
+      .inv-title { font-size: 16px !important; color: #000 !important; }
+      .inv-address, .inv-phone { font-size: 11px !important; color: #000 !important; }
+      .inv-num { font-size: 14px !important; color: #000 !important; }
+      .inv-date { font-size: 11px !important; color: #000 !important; }
+      .inv-status { border: 1px solid #000 !important; color: #000 !important; background: transparent !important; padding: 2px 6px !important; font-size: 10px !important; }
+      .inv-method { font-size: 11px !important; color: #000 !important; }
+      .inv-cust { background: transparent !important; border: 1px dashed #000 !important; padding: 5px !important; margin-bottom: 10px !important; }
+      .inv-cust div { color: #000 !important; font-size: 12px !important; }
+      .inv-table th { font-size: 11px !important; color: #000 !important; background: transparent !important; border-bottom: 1px solid #000 !important; padding: 4px 2px !important; }
+      .inv-table td { font-size: 12px !important; color: #000 !important; padding: 4px 2px !important; border-bottom: 1px dashed #ccc !important; }
+      .tf-span { font-size: 11px !important; color: #000 !important; padding: 4px !important; }
+      .tf-val { font-size: 13px !important; color: #000 !important; padding: 4px !important; font-weight: bold !important; }
+      .inv-footer { border-top: 1px dashed #000 !important; margin-top: 10px !important; padding-top: 10px !important; color: #000 !important; }
+      .inv-footer div { color: #000 !important; font-size: 12px !important; }
+      .hide-80 { display: none !important; }
+      table { width: 100%; border-collapse: collapse; }
+    `;
+  } else {
+    return `
+      @page { margin: 10mm; size: A4; }
+      body { font-family: 'Cairo', sans-serif; background: white; padding: 20px; direction: rtl; }
+      .invoice-container { max-width: 800px; margin: 0 auto; }
+      .inv-wrapper { page-break-after: always; }
+      @media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+    `;
+  }
 }
-function doPrint() {
+
+function doPrint(size = "a4") {
   const content = document.getElementById("printArea").innerHTML;
-  const w = window.open("", "_blank", "width=620,height=840");
+  const w = window.open(
+    "",
+    "_blank",
+    size === "80mm" ? "width=350,height=600" : "width=800,height=900",
+  );
   w.document.write(
-    `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>فاتورة</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Cairo',sans-serif;background:white;padding:20px;direction:rtl;}@page{margin:10mm;}</style></head><body><div style="max-width:480px;margin:0 auto;padding:20px">${content}</div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}}<\/script></body></html>`,
+    `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>طباعة</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;} ${getPrintStyles(size)}</style></head><body><div class="invoice-container">${content}</div><script>window.onload=function(){setTimeout(()=>{window.print();window.onafterprint=function(){window.close();}},300);}<\/script></body></html>`,
   );
   w.document.close();
+}
+
+function doBulkPrint(size = "a4") {
+  const content = document.getElementById("bulkPrintArea").innerHTML;
+  const w = window.open(
+    "",
+    "_blank",
+    size === "80mm" ? "width=350,height=600" : "width=800,height=900",
+  );
+  w.document.write(
+    `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>طباعة مجمعة</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;} ${getPrintStyles(size)}</style></head><body><div class="invoice-container">${content}</div><script>window.onload=function(){setTimeout(()=>{window.print();window.onafterprint=function(){window.close();}},300);}<\/script></body></html>`,
+  );
+  w.document.close();
+}
+
+function printRangeInvoices(size = "a4") {
+  const invs = getRangeInvoices();
+  if (!invs.length) {
+    showToast("لا توجد فواتير في هذا النطاق", "error");
+    return;
+  }
+  const content = invs.map((inv) => buildInvoiceHTML(inv)).join("");
+  const w = window.open(
+    "",
+    "_blank",
+    size === "80mm" ? "width=350,height=600" : "width=800,height=900",
+  );
+  w.document.write(
+    `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>طباعة فواتير</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;} ${getPrintStyles(size)}</style></head><body><div class="invoice-container">${content}</div><script>window.onload=function(){setTimeout(()=>{window.print();window.onafterprint=function(){window.close();}},300);}<\/script></body></html>`,
+  );
+  w.document.close();
+  closeModal("printRangeModal");
 }
 
 function getFilteredInvoices() {
@@ -1051,14 +1125,6 @@ function openBulkPrint(invs, title) {
     invs.map((inv) => buildInvoiceHTML(inv)).join("") +
     "</div>";
   openModal("bulkPrintModal");
-}
-function doBulkPrint() {
-  const content = document.getElementById("bulkPrintArea").innerHTML;
-  const w = window.open("", "_blank", "width=640,height=900");
-  w.document.write(
-    `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>فواتير</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Cairo',sans-serif;background:white;padding:16px;direction:rtl;}@page{margin:8mm;}</style></head><body><div style="max-width:500px;margin:0 auto">${content}</div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}}<\/script></body></html>`,
-  );
-  w.document.close();
 }
 function resetInvFilter() {
   ["invDateFrom", "invDateTo", "invSearch2"].forEach((id) => {
@@ -2087,20 +2153,6 @@ function previewRangeInvoices() {
   }
   closeModal("printRangeModal");
   openBulkPrint(invs, "معاينة " + invs.length + " فاتورة");
-}
-function printRangeInvoices() {
-  const invs = getRangeInvoices();
-  if (!invs.length) {
-    showToast("لا توجد فواتير في هذا النطاق", "error");
-    return;
-  }
-  const content = invs.map((inv) => buildInvoiceHTML(inv)).join("");
-  const w = window.open("", "_blank", "width=640,height=900");
-  w.document.write(
-    `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>فواتير</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Cairo,sans-serif;background:white;padding:16px;direction:rtl;}@page{margin:8mm;}</style></head><body><div style="max-width:500px;margin:0 auto">${content}</div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close();}}<\/script></body></html>`,
-  );
-  w.document.close();
-  closeModal("printRangeModal");
 }
 
 function openModal(id) {

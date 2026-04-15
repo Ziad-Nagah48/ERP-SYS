@@ -19,6 +19,7 @@
   --radius-sm: 8px;
   --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
 }
+/* LIGHT THEME */
 body.light {
   --bg: #f4f5f7;
   --bg2: #ffffff;
@@ -42,9 +43,7 @@ body {
   display: flex;
   height: 100vh;
   overflow: hidden;
-  transition:
-    background 0.3s,
-    color 0.3s;
+  transition: background 0.3s color 0.3s;
 }
 
 /* LOGIN */
@@ -1317,25 +1316,6 @@ tr:hover td {
   background: var(--text3);
 }
 
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  #printArea,
-  #printArea *,
-  #bulkPrintArea,
-  #bulkPrintArea * {
-    visibility: visible;
-  }
-  #printArea,
-  #bulkPrintArea {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 100%;
-    background: white !important;
-  }
-}
 @media (max-width: 900px) {
   .metric-grid {
     grid-template-columns: repeat(2, 1fr);
