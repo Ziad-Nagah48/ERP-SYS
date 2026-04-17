@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="./styel.css" />
   </head>
   <body>
-    <!-- Login Screen -->
     <div class="login-screen" id="loginScreen">
       <div class="login-box">
         <div class="login-logo">🏪</div>
@@ -30,6 +29,15 @@
           </div>
           <div
             class="role-card"
+            id="roleSupervisor"
+            onclick="selectRole('supervisor')"
+          >
+            <div class="rc-icon">🧑‍💼</div>
+            <div class="rc-label">مشرف</div>
+            <div class="rc-desc">بدون حذف</div>
+          </div>
+          <div
+            class="role-card"
             id="roleCashier"
             onclick="selectRole('cashier')"
           >
@@ -44,6 +52,7 @@
             id="loginUser"
             placeholder="اسم المستخدم"
             value="admin"
+            onkeydown="if (event.key === 'Enter') doLogin();"
           />
           <input
             class="form-control"
@@ -51,21 +60,38 @@
             id="loginPass"
             placeholder="كلمة المرور"
             value="1234"
+            onkeydown="if (event.key === 'Enter') doLogin();"
           />
           <button class="login-btn" onclick="doLogin()">تسجيل الدخول</button>
         </div>
         <div class="login-hint">
-          مدير: admin / 1234 &nbsp;|&nbsp; كاشير: cashier / 1234
+          مدير: admin / 1234 &nbsp;|&nbsp; مشرف: supervisor / 1234 &nbsp;|&nbsp;
+          كاشير: cashier / 1234
+        </div>
+        <div style="margin-top: 14px; text-align: center">
+          <button
+            onclick="if(confirm('هل تريد مسح جميع البيانات المحفوظة والبدء من جديد؟')){localStorage.removeItem(\'erp_super_data\');location.reload();}"
+            style="
+              background: none;
+              border: none;
+              color: #e74c3c;
+              font-size: 11px;
+              cursor: pointer;
+              font-family: Cairo, sans-serif;
+              text-decoration: underline;
+            "
+          >
+            🔄 مسح البيانات المحفوظة وإعادة التشغيل
+          </button>
         </div>
       </div>
     </div>
-    <!-- Sidebar Overlay -->
+
     <div
       class="sidebar-overlay"
       id="sideOverlay"
       onclick="closeSidebar()"
     ></div>
-    <!-- Sidebar -->
     <div class="sidebar closed" id="sidebar" style="display: none">
       <div class="sidebar-logo" style="position: relative">
         <div class="logo-icon">🏪</div>
@@ -97,7 +123,7 @@
         </div>
       </div>
     </div>
-    <!-- Main Content -->
+
     <div class="main" id="mainArea" style="display: none">
       <div class="topbar">
         <div style="display: flex; align-items: center; gap: 10px">
@@ -180,7 +206,43 @@
                     flex-wrap: wrap;
                   "
                 >
-                  <div class="search-bar" style="max-width: 280px">
+                  <!-- حقل مسح الباركود -->
+                  <div style="position: relative; min-width: 220px">
+                    <span
+                      style="
+                        position: absolute;
+                        right: 10px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        font-size: 16px;
+                        pointer-events: none;
+                        z-index: 1;
+                      "
+                      >🔲</span
+                    >
+                    <input
+                      type="text"
+                      id="barcodeInput"
+                      placeholder="امسح الباركود هنا..."
+                      class="form-control"
+                      style="
+                        padding-right: 36px;
+                        font-family: monospace;
+                        letter-spacing: 1px;
+                        border-color: var(--accent2);
+                        background: rgba(78, 205, 196, 0.05);
+                      "
+                      oninput="handleBarcodeInput()"
+                      onkeydown="
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          scanBarcode();
+                        }
+                      "
+                      autocomplete="off"
+                    />
+                  </div>
+                  <div class="search-bar" style="max-width: 240px">
                     <span class="search-icon">🔍</span
                     ><input
                       type="text"
@@ -191,6 +253,19 @@
                   </div>
                   <div class="cats-row" id="posCats"></div>
                 </div>
+                <!-- شريط حالة الباركود -->
+                <div
+                  id="barcodeFeedback"
+                  style="
+                    display: none;
+                    margin-top: 8px;
+                    padding: 7px 12px;
+                    border-radius: var(--radius-sm);
+                    font-size: 13px;
+                    font-weight: 600;
+                    transition: all 0.3s;
+                  "
+                ></div>
               </div>
               <div class="products-grid" id="posGrid"></div>
             </div>
@@ -204,70 +279,123 @@
                         font-weight: 700;
                         color: var(--text);
                       "
-                      >الفاتورة</span
-                    ><span class="badge badge-info" id="cartCountBadge"
+                      >🧾 الفاتورة</span
+                    >
+                    <span class="badge badge-info" id="cartCountBadge"
                       >0 صنف</span
                     >
                   </div>
-                  <button class="btn btn-sm btn-ghost" onclick="clearCart()">
-                    مسح الكل
-                  </button>
+                  <div style="display: flex; gap: 6px">
+                    <button
+                      class="btn btn-sm btn-ghost"
+                      onclick="clearCart()"
+                      title="مسح كل البنود"
+                      style="font-size: 12px"
+                    >
+                      🗑 مسح
+                    </button>
+                  </div>
                 </div>
+                <!-- اختيار العميل -->
                 <div
                   style="
                     padding: 10px 14px;
                     border-bottom: 1px solid var(--border);
+                    background: var(--bg3);
                   "
                 >
+                  <label
+                    style="
+                      font-size: 11px;
+                      color: var(--text3);
+                      margin-bottom: 4px;
+                      display: block;
+                    "
+                    >👤 العميل</label
+                  >
                   <select
                     class="form-control"
                     id="posCustomer"
-                    style="font-size: 13px; padding: 8px 10px"
+                    style="font-size: 13px; padding: 7px 10px"
                   >
                     <option value="">-- عميل نقدي --</option>
                   </select>
                 </div>
                 <div class="cart-body" id="cartBody">
-                  <div class="cart-empty-msg">اضغط على منتج لإضافته</div>
+                  <div class="cart-empty-msg">
+                    <div style="font-size: 32px; margin-bottom: 8px">🛒</div>
+                    <div>اضغط على منتج أو امسح الباركود</div>
+                    <div
+                      style="
+                        font-size: 11px;
+                        margin-top: 4px;
+                        color: var(--text3);
+                      "
+                    >
+                      لإضافة أصناف للفاتورة
+                    </div>
+                  </div>
                 </div>
                 <div class="cart-foot">
                   <div class="totals-line">
-                    <span>المجموع</span><span id="subtotal">0.00 ج</span>
+                    <span style="color: var(--text3)">المجموع الفرعي</span>
+                    <span id="subtotal" style="font-weight: 600">0.00 ج</span>
                   </div>
                   <div class="discount-row">
-                    <label>خصم:</label
-                    ><input
+                    <label style="white-space: nowrap; color: var(--text3)"
+                      >🏷 خصم:</label
+                    >
+                    <input
                       type="number"
                       id="discInput"
                       value="0"
                       min="0"
                       oninput="calcTotals()"
-                    /><span style="font-size: 13px; color: var(--text2)"
-                      >جنيه</span
+                      style="width: 80px"
+                    />
+                    <span
+                      style="font-size: 13px; color: var(--text3)"
+                      id="discCurrLabel"
+                      >ج</span
                     >
                   </div>
-                  <div class="totals-big">
-                    <span>الإجمالي</span><span id="grandTotal">0.00 ج</span>
+                  <div class="totals-big" style="margin-bottom: 10px">
+                    <span>💰 الإجمالي</span>
+                    <span id="grandTotal" style="color: var(--accent)"
+                      >0.00 ج</span
+                    >
                   </div>
-                  <div class="pay-chips">
-                    <button
-                      class="pay-chip active"
-                      onclick="setPayment('cash', this)"
+                  <!-- طريقة الدفع -->
+                  <div style="margin-bottom: 8px">
+                    <div
+                      style="
+                        font-size: 11px;
+                        color: var(--text3);
+                        margin-bottom: 6px;
+                      "
                     >
-                      كاش
-                    </button>
-                    <button
-                      class="pay-chip"
-                      onclick="setPayment('credit', this)"
-                    >
-                      آجل
-                    </button>
-                    <button
-                      class="pay-chip"
-                      onclick="setPayment('transfer', this)"
-                    >
-                      تحويل
-                    </button>
+                      طريقة الدفع
+                    </div>
+                    <div class="pay-chips">
+                      <button
+                        class="pay-chip active"
+                        onclick="setPayment('cash', this)"
+                      >
+                        💵 كاش
+                      </button>
+                      <button
+                        class="pay-chip"
+                        onclick="setPayment('credit', this)"
+                      >
+                        📋 آجل
+                      </button>
+                      <button
+                        class="pay-chip"
+                        onclick="setPayment('transfer', this)"
+                      >
+                        🏦 تحويل
+                      </button>
+                    </div>
                   </div>
                   <button
                     class="checkout-btn"
@@ -275,7 +403,7 @@
                     onclick="checkout()"
                     disabled
                   >
-                    إتمام البيع ✓
+                    ✅ إتمام البيع
                   </button>
                 </div>
               </div>
@@ -309,6 +437,7 @@
                 <thead>
                   <tr>
                     <th>الكود</th>
+                    <th>الباركود</th>
                     <th>اسم الصنف</th>
                     <th>التصنيف</th>
                     <th>نوع المنتج</th>
@@ -637,6 +766,106 @@
           <div class="users-grid" id="usersGrid"></div>
         </div>
 
+        <!-- صفحة المرتجعات -->
+        <div class="page" id="page-returns">
+          <div class="toolbar">
+            <button class="btn btn-primary" onclick="openReturnModal()">
+              ↩️ تسجيل مرتجع
+            </button>
+            <button
+              class="btn btn-ghost"
+              onclick="showPage('journal')"
+              style="margin-right: 8px"
+            >
+              📒 عرض القيود المحاسبية
+            </button>
+          </div>
+          <div
+            class="card"
+            style="
+              margin-bottom: 16px;
+              background: rgba(108, 99, 255, 0.06);
+              border-color: var(--accent);
+            "
+          >
+            <div style="font-size: 13px; color: var(--text2); line-height: 1.8">
+              <strong style="color: var(--accent)"
+                >⚖️ قواعد النظام المحاسبي للمرتجعات:</strong
+              ><br />
+              • المرتجع لا يتجاوز 100% من قيمة الفاتورة الأصلية<br />
+              • كل مرتجع يُنشئ قيداً محاسبياً متوازناً (ديبيت = كريديت)<br />
+              • البضاعة المرتجعة تعود تلقائياً للمخزون<br />
+              • الفواتير الآجلة: يتم خصم قيمة المرتجع من رصيد العميل
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">↩️ سجل المرتجعات</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>رقم المرتجع</th>
+                    <th>الفاتورة الأصلية</th>
+                    <th>العميل</th>
+                    <th>التاريخ</th>
+                    <th>الأصناف المرتجعة</th>
+                    <th>القيمة</th>
+                    <th>السبب</th>
+                    <th>القيد</th>
+                  </tr>
+                </thead>
+                <tbody id="returnsTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- صفحة القيود المحاسبية -->
+        <div class="page" id="page-journal">
+          <div class="toolbar">
+            <span style="font-size: 14px; font-weight: 600; color: var(--text)"
+              >📒 دفتر اليومية — القيود المحاسبية</span
+            >
+          </div>
+          <div
+            id="journalSummaryBar"
+            style="
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 16px;
+              margin-bottom: 20px;
+            "
+          ></div>
+          <div class="card">
+            <div class="card-title">📋 قائمة القيود المحاسبية</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>المرجع</th>
+                    <th>التاريخ</th>
+                    <th>البيان</th>
+                    <th>إجمالي الديبيت</th>
+                    <th>إجمالي الكريديت</th>
+                    <th>التوازن</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="journalTbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div
+            id="journalDetailCard"
+            style="display: none; margin-top: 16px"
+            class="card"
+          >
+            <div class="card-title" id="journalDetailTitle">تفاصيل القيد</div>
+            <div id="journalDetailBody"></div>
+          </div>
+        </div>
+
         <div class="page" id="page-hr">
           <div class="toolbar">
             <button class="btn btn-primary" onclick="openEmpModal()">
@@ -853,11 +1082,40 @@
             >
               💾 حفظ الإعدادات
             </button>
+
+            <!-- ═══ إدارة التصنيفات ═══ -->
+            <div style="margin-top: 32px">
+              <div
+                style="
+                  font-size: 16px;
+                  font-weight: 700;
+                  color: var(--text);
+                  margin-bottom: 16px;
+                  padding-bottom: 10px;
+                  border-bottom: 1px solid var(--border);
+                "
+              >
+                🗂️ إدارة التصنيفات
+              </div>
+              <div style="display: flex; gap: 10px; margin-bottom: 16px">
+                <input
+                  class="form-control"
+                  id="newCatInput"
+                  placeholder="اكتب اسم التصنيف الجديد..."
+                  style="flex: 1"
+                  onkeydown="if (event.key === 'Enter') addCategory();"
+                />
+                <button class="btn btn-primary" onclick="addCategory()">
+                  + إضافة
+                </button>
+              </div>
+              <div id="catsList"></div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    <!-- Product Modal -->
+
     <div class="modal-overlay" id="productModal">
       <div class="modal">
         <div class="modal-header">
@@ -874,6 +1132,37 @@
           <div class="form-group">
             <label class="form-label">الكود</label
             ><input class="form-control" id="pCode" placeholder="P001" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"
+            >📦 الباركود
+            <span style="font-size: 11px; color: var(--text3)"
+              >(اختياري — اكتبه يدوياً أو امسح بالماكينة)</span
+            ></label
+          >
+          <div style="position: relative">
+            <input
+              class="form-control"
+              id="pBarcode"
+              placeholder="امسح الباركود بالماكينة أو اكتبه يدوياً..."
+              style="
+                padding-left: 38px;
+                font-family: monospace;
+                letter-spacing: 1px;
+              "
+            />
+            <span
+              style="
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 16px;
+                pointer-events: none;
+              "
+              >🔲</span
+            >
           </div>
         </div>
         <div class="form-grid">
@@ -983,7 +1272,7 @@
         </div>
       </div>
     </div>
-    <!-- Purchase Modal -->
+
     <div class="modal-overlay" id="purchaseModal">
       <div class="modal">
         <div class="modal-header">
@@ -1037,7 +1326,7 @@
         </div>
       </div>
     </div>
-    <!-- Supplier Modal -->
+
     <div class="modal-overlay" id="supplierModal">
       <div class="modal">
         <div class="modal-header">
@@ -1073,7 +1362,7 @@
         </div>
       </div>
     </div>
-    <!-- Customer Modal -->
+
     <div class="modal-overlay" id="customerModal">
       <div class="modal">
         <div class="modal-header">
@@ -1109,7 +1398,7 @@
         </div>
       </div>
     </div>
-    <!-- Stock Take Modal -->
+
     <div class="modal-overlay" id="stockTakeModal">
       <div class="modal" style="max-width: 660px">
         <div class="modal-header">
@@ -1140,7 +1429,7 @@
         </div>
       </div>
     </div>
-    <!-- Success Modal -->
+
     <div class="modal-overlay" id="successModal">
       <div class="modal" style="max-width: 400px; text-align: center">
         <div class="success-icon-big">✓</div>
@@ -1182,7 +1471,7 @@
         </div>
       </div>
     </div>
-    <!-- Print Preview Modal -->
+
     <div class="modal-overlay" id="printPreviewModal">
       <div class="modal" style="max-width: 520px; padding: 0; overflow: hidden">
         <div
@@ -1240,7 +1529,7 @@
         </div>
       </div>
     </div>
-    <!-- Bulk Print Modal -->
+
     <div class="modal-overlay" id="bulkPrintModal">
       <div class="modal" style="max-width: 520px; padding: 0; overflow: hidden">
         <div
@@ -1288,7 +1577,7 @@
         </div>
       </div>
     </div>
-    <!-- User Modal -->
+
     <div class="modal-overlay" id="userModal">
       <div class="modal">
         <div class="modal-header">
@@ -1337,7 +1626,7 @@
         </div>
       </div>
     </div>
-    <!-- Employee Modal -->
+
     <div class="modal-overlay" id="empModal">
       <div class="modal" style="max-width: 580px">
         <div class="modal-header">
@@ -1438,7 +1727,7 @@
         </div>
       </div>
     </div>
-    <!-- Deduction Modal -->
+
     <div class="modal-overlay" id="deductModal">
       <div class="modal" style="max-width: 460px">
         <div class="modal-header">
@@ -1490,7 +1779,7 @@
         </div>
       </div>
     </div>
-    <!-- Print Range Modal -->
+
     <div class="modal-overlay" id="printRangeModal">
       <div class="modal" style="max-width: 480px">
         <div class="modal-header">
@@ -1617,7 +1906,7 @@
         </div>
       </div>
     </div>
-    <!-- Payslip Modal -->
+
     <div class="modal-overlay" id="payslipModal">
       <div class="modal" style="max-width: 500px; padding: 0; overflow: hidden">
         <div
@@ -1658,6 +1947,130 @@
               direction: rtl;
             "
           ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- مودال تغيير كلمة المرور -->
+    <div class="modal-overlay" id="changePassModal">
+      <div class="modal" style="max-width: 400px">
+        <div class="modal-header">
+          <div class="modal-title">🔑 تغيير كلمة المرور</div>
+          <button class="modal-close" onclick="closeModal('changePassModal')">
+            ✕
+          </button>
+        </div>
+        <div style="font-size: 13px; color: var(--text2); margin-bottom: 16px">
+          المستخدم:
+          <strong id="cpUserName" style="color: var(--accent)"></strong>
+        </div>
+        <div class="form-group">
+          <label class="form-label">كلمة المرور الجديدة</label>
+          <input
+            class="form-control"
+            type="password"
+            id="cpNewPass"
+            placeholder="أدخل كلمة المرور الجديدة"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">تأكيد كلمة المرور</label>
+          <input
+            class="form-control"
+            type="password"
+            id="cpConfirm"
+            placeholder="أعد كتابة كلمة المرور"
+          />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeModal('changePassModal')">
+            إلغاء
+          </button>
+          <button class="btn btn-primary" onclick="saveNewPassword()">
+            💾 حفظ
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- مودال المرتجعات -->
+    <div class="modal-overlay" id="returnModal">
+      <div class="modal" style="max-width: 580px">
+        <div class="modal-header">
+          <div class="modal-title">↩️ تسجيل مرتجع</div>
+          <button class="modal-close" onclick="closeModal('returnModal')">
+            ✕
+          </button>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">رقم الفاتورة الأصلية</label>
+            <select
+              class="form-control"
+              id="returnInvId"
+              onchange="loadReturnItems()"
+            ></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">سبب الإرجاع</label>
+            <input
+              class="form-control"
+              id="returnReason"
+              placeholder="مثال: عيب في المنتج"
+            />
+          </div>
+        </div>
+        <div id="returnItemsSection" style="display: none">
+          <div
+            id="returnLimitBar"
+            style="
+              display: none;
+              margin-bottom: 14px;
+              padding: 12px;
+              background: var(--bg3);
+              border-radius: var(--radius-sm);
+              border: 1px solid var(--border);
+            "
+          ></div>
+          <div
+            style="
+              font-size: 13px;
+              font-weight: 600;
+              color: var(--text);
+              margin-bottom: 10px;
+            "
+          >
+            اختر الأصناف المرتجعة والكمية:
+          </div>
+          <div id="returnItemsList"></div>
+          <div
+            style="
+              margin-top: 14px;
+              padding: 12px;
+              background: var(--bg3);
+              border-radius: var(--radius-sm);
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <span style="font-size: 14px; color: var(--text2)"
+              >قيمة المرتجع:</span
+            >
+            <span
+              style="font-size: 18px; font-weight: 700; color: var(--accent3)"
+              id="returnTotal"
+              >0.00</span
+            >
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeModal('returnModal')">
+            إلغاء
+          </button>
+          <button class="btn btn-danger" onclick="saveReturn()">
+            ↩️ تأكيد الإرجاع
+          </button>
         </div>
       </div>
     </div>
